@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kibana
+  namespace: logging
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      component: kibana #选中下面的
+  template:
+    metadata:
+      labels:
+        component: kibana #被选中
+    spec:
+      containers:
+        - name: kibana
+          image: kibana:7.10.1
+          command:
+            - ./entrypoint.sh
+          args:
+            - ./billmgr-server
+          ports:
+            - containerPort: 5601
+              name: http
+          env:
+            - name: MYSQL_ADDR
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.mysql.secret }}
+                  key: addr
+            - name: ANKR_ADDRESS
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Values.eth_addr.configmap }}
+                  key: eth.ankr
+            - name: MYSQL_DB
+              value: dbaddress
+          volumeMounts:
+            - name: "kibana-conf"
+              mountPath: "/usr/share/kibana/config/kibana.yml"
+              subPath: kibana.yml   # /usr/share/kibana 原本是有这个目录的， subPath可以防止默认挂载的覆盖行为
+      volumes:
+        - name: "kibana-conf"
+          configMap:
+            name: "kibana"
+            items:
+              - key: "config"
+                path: "kibana.yml"  # 由于挂载的是文件， kibana.yml对应上就行了

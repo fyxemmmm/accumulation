@@ -1,0 +1,11 @@
+# 比如访问某个想通过这个service访问其他namespace中的服务, http的访问用ExternalName并不适合
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: redis
+  name: redis-cluster-extenal
+  namespace: apiservice
+spec:
+  type: ExternalName
+  externalName: redis-cluster-extenal.default.svc.cluster.local

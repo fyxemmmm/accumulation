@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: eth-addr
+  namespace: default
+data:
+  eth.ankr: 0x3fff8d0697f521a302432f4a105d55a61
+  eth.usdt: 0x98b78f473dcf1ss83e088d594185fba71
+
+

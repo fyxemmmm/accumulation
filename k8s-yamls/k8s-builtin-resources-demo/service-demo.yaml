@@ -1,0 +1,37 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: redis
+  name: redis-cluster-extenal
+  namespace: apiservice
+spec:
+  ports:
+    - name: redis-port
+      port: 6379
+      protocol: TCP
+      targetPort: 6379
+  selector:
+    app: redis
+    appCluster: redis-cluster
+  type: ClusterIP
+
+
+---
+### 无头服务
+kind: Service
+apiVersion: v1
+metadata:
+  namespace: logging
+  name: elasticsearch-master-headless
+  labels:
+    app: "elasticsearch-master" # service也可能被某些operator选中， 所以并不一定没有用， 日志收集也可以筛选标签
+spec:
+  clusterIP: None
+  selector:
+    app: "elasticsearch-master"
+  ports:
+    - name: http
+      port: 9200
+    - name: transport
+      port: 9300

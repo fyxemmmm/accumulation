@@ -1,0 +1,92 @@
+apiVersion: v1
+kind: Endpoints
+metadata:
+  name: ceph-metrics-svc
+subsets:
+  - addresses:
+      - ip: 113.142.1.188  # 可以有多个
+    ports:
+      - name: metrics
+        port: 9128
+        protocol: TCP
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: ceph-metrics-svc
+  labels:
+    service: ceph-metrics-svc
+spec:
+  ports:
+    - name: metrics
+      port: 9128
+      protocol: TCP
+      targetPort: 9128
+  type: ClusterIP
+---
+
+
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: ceph-metrics
+  namespace: monitoring
+  labels:
+    monitor-app: ceph-metrics
+spec:
+  namespaceSelector:
+    matchNames:
+      - default
+  selector:
+    matchLabels:
+      service: ceph-metrics-svc
+  endpoints:
+    - port: metrics
+      path: /metrics
+      relabelings:
+        - action: replace
+          sourceLabels: ['__address__']
+          separator: ':'
+          regex: '.*'
+          targetLabel: 'instance'
+          replacement: 'ceph-metrics-svc:9128'
+        - action: replace
+          sourceLabels: ['__address__']
+          separator: ':'
+          regex: '.*'
+          targetLabel: 'pod'
+          replacement: 'ceph-metrics'
+
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: Prometheus
+metadata:
+  name: prometheus-ceph-metrics
+  namespace: monitoring
+spec:
+  serviceAccountName: prometheus-k8s
+  serviceMonitorSelector:
+    matchLabels:
+      monitor-app: ceph-metrics
+  resources:
+    requests:
+      memory: 200Mi
+  enableAdminAPI: false
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ceph-prometheus
+  namespace: monitoring
+  labels:
+    app: ceph-prometheus
+spec:
+  ports:
+    - name: ceph-prometheus
+      port: 9090
+  clusterIP: None
+  selector:
+    operator.prometheus.io/name: prometheus-ceph-metrics

@@ -1,0 +1,60 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kibana
+  namespace: logging
+data:
+  config: |
+    server.name: kibana
+    server.host: "0"
+    elasticsearch.hosts: [ "http://elasticsearch-master:9200" ]
+    monitoring.ui.container.elasticsearch.enabled: true
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kibana
+  namespace: logging
+  labels:
+    component: kibana
+spec:
+  selector:
+    component: kibana
+  ports:
+    - name: http
+      port: 5601
+      targetPort: http
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kibana
+  namespace: logging
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      component: kibana
+  template:
+    metadata:
+      labels:
+        component: kibana
+    spec:
+      containers:
+        - name: kibana
+          image: kibana:7.10.1
+          ports:
+            - containerPort: 5601
+              name: http
+          volumeMounts:
+            - name: "kibana-conf"
+              mountPath: "/usr/share/kibana/config/kibana.yml"
+              subPath: kibana.yml
+      volumes:
+        - name: "kibana-conf"
+          configMap:
+            name: "kibana"
+            items:
+              - key: "config"
+                path: "kibana.yml"
