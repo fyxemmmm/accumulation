@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: testceph2
+  labels:
+    app: testceph2
+spec:
+  containers:
+    - name: testcephpod
+      image: fyxemmmm/testceph:v2
