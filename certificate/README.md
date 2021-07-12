@@ -1,4 +1,4 @@
-## 生成证书
+## 生成证书 简易方式
 ```shell
 # 先下载好工具
 wget https://pkg.cfssl.org/R1.2/cfssl_linux-amd64
