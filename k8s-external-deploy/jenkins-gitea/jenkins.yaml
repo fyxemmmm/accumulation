@@ -1,0 +1,53 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: jenkins
+  name: jenkins
+  namespace: cicd
+spec:
+  ports:
+    - port: 8080
+      targetPort: 8080
+      nodePort: 30001
+  selector:
+    app: jenkinsci
+  type: NodePort
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jenkinsci
+  namespace: cicd
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jenkinsci #选中下面的
+  template:
+    metadata:
+      labels:
+        app: jenkinsci #被选中
+    spec:
+      securityContext:
+        runAsUser: 0 # 需要用宿主机的0 也就是root去操作宿主机中的某些需要root权限的事情
+      nodeSelector:
+        kubernetes.io/hostname: huawei-worker
+      containers:
+        - name: jenkinsci
+          image: jenkinsci/blueocean
+          ports:
+            - containerPort: 8080
+              name: http
+          volumeMounts:
+            - name: "ci-volume"
+              mountPath: "/var/jenkins_home"
+            - name: "docker-sock"
+              mountPath: "/var/run/docker.sock"
+      volumes:
+        - name: "ci-volume"
+          hostPath:
+            path: /home/feixiang/jenkins/data
+        - name: "docker-sock"
+          hostPath:
+            path: /var/run/docker.sock

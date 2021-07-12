@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gitea
+  namespace: cicd
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gitea #选中下面的
+  template:
+    metadata:
+      labels:
+        app: gitea #被选中
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: huawei-worker
+      containers:
+        - name: gitea
+          image: gitea/gitea
+          ports:
+            - containerPort: 3000
+              name: http
+            - containerPort: 22
+              name: ssh
+          volumeMounts:
+            - name: "gitea-volume"
+              mountPath: "/data"
+      volumes:
+        - name: "gitea-volume"
+          hostPath:
+            path: /home/feixiang/gitea/data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: gitea
+  name: gitea
+  namespace: cicd
+spec:
+  ports:
+    - port: 3000
+      targetPort: 3000
+      nodePort: 30002 #web
+      name: http
+    - port: 22
+      targetPort: 22
+      nodePort: 30022
+      name: ssh
+  selector:
+    app: gitea
+  type: NodePort
