@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: etcd0-deploy
+  namespace: apiservice
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      etcd_node: etcd0
+  template:
+    metadata:
+      labels:
+        app: etcd
+        etcd_node: etcd0
+      name: etcd0
+    spec:
+      containers:
+        - command:
+            - /usr/local/bin/etcd
+            - --name
+            - etcd0
+            - --data-dir
+            - /etcddata/data
+            - --wal-dir
+            - /etcddata/wal
+            - --initial-advertise-peer-urls
+            - http://etcd0:2380
+            - --listen-peer-urls
+            - http://0.0.0.0:2380
+            - --listen-client-urls
+            - http://0.0.0.0:2379
+            - --advertise-client-urls
+            - http://etcd0:2379
+            - --initial-cluster
+            - etcd0=http://etcd0:2380,etcd1=http://etcd1:2380,etcd2=http://etcd2:2380
+            - --initial-cluster-state
+            - new
+          image: quay.io/coreos/etcd:latest
+          imagePullPolicy: Always
+          name: etcd0
+          ports:
+            - containerPort: 2379
+              name: client
+              protocol: TCP
+            - containerPort: 2380
+              name: server
+              protocol: TCP
+          volumeMounts:
+            - mountPath: /etcddata
+              name: etcd0
+      restartPolicy: Always
+      volumes:
+        - name: etcd0
+          persistentVolumeClaim:
+            claimName: etcd0-pv-claim

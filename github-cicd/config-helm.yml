@@ -3,7 +3,7 @@ version: 2.1
 jobs:
   build:
     docker:
-      - image: ankrnetwork/alpine:v2.0.0
+      - image: img:v2.0.0
     steps:
       - checkout
       - setup_remote_docker
@@ -96,10 +96,3 @@ workflows:
     jobs:
       - build:
           context: cicd
-      - ankr-tests:
-          requires:
-            - build
-          filters:
-            branches:
-              only: develop
-

@@ -1,0 +1,86 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: nsqd
+  namespace: apiservice
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: nsq
+      component: nsqd
+  serviceName: nsqd
+  template:
+    metadata:
+      labels:
+        app: nsq
+        component: nsqd
+    spec:
+      containers:
+        - command:
+            - /nsqd
+            - -max-msg-size=2097152
+            - -data-path
+            - /data
+            - -lookupd-tcp-address
+            - nsqlookupd-0.nsqlookupd.apiservice.svc.cluster.local:4160
+            - -lookupd-tcp-address
+            - nsqlookupd-1.nsqlookupd.apiservice.svc.cluster.local:4160
+            - -broadcast-address
+            - $(HOSTNAME).nsqd
+          env:
+            - name: HOSTNAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.name
+          image: nsqio/nsq:v1.2.0
+          imagePullPolicy: Always
+          livenessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /ping
+              port: http
+              scheme: HTTP
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 1
+          name: nsqd
+          ports:
+            - containerPort: 4150
+              name: tcp
+              protocol: TCP
+            - containerPort: 4151
+              name: http
+              protocol: TCP
+          readinessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /ping
+              port: http
+              scheme: HTTP
+            initialDelaySeconds: 2
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 1
+          resources:
+            requests:
+              cpu: 300m
+              memory: 128Mi
+          volumeMounts:
+            - mountPath: /data
+              name: datadir
+      restartPolicy: Always
+  volumeClaimTemplates:
+    - apiVersion: v1
+      kind: PersistentVolumeClaim
+      metadata:
+        name: datadir
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 30Gi
+

@@ -17,9 +17,9 @@ metadata:
   labels:
     service: ceph-metrics-svc
 spec:
+  clusterIP: None
   ports:
     - name: metrics
       port: 9128
       protocol: TCP
       targetPort: 9128
-  type: ClusterIP

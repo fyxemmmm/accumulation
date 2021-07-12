@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nsqadmin
+  namespace: apiservice
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nsq
+      component: nsqadmin
+  template:
+    metadata:
+      labels:
+        app: nsq
+        component: nsqadmin
+    spec:
+      containers:
+        - command:
+            - /nsqadmin
+            - -lookupd-http-address
+            - nsqlookupd-0.nsqlookupd.apiservice.svc.cluster.local:4161
+            - -lookupd-http-address
+            - nsqlookupd-1.nsqlookupd.apiservice.svc.cluster.local:4161
+          image: nsqio/nsq:v1.2.0
+          imagePullPolicy: Always
+          livenessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /ping
+              port: http
+              scheme: HTTP
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 1
+          name: nsqadmin
+          ports:
+            - containerPort: 4170
+              name: tcp
+              protocol: TCP
+            - containerPort: 4171
+              name: http
+              protocol: TCP
+          readinessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /ping
+              port: http
+              scheme: HTTP
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 1
+          resources:
+            requests:
+              cpu: 30m
+              memory: 64Mi

@@ -28,6 +28,9 @@ proto:
         	 api/protos/$$t/public*.proto; fi \
 	done
 
+
+
+# Deprecated
 .PHONY: docker-build
 docker-build:
 	@echo "build docker image"
@@ -41,6 +44,7 @@ docker-build:
 	fi; \
 	docker build --build-arg GITHUB_USER=$$GITHUB_USER --build-arg GITHUB_TOKEN=$$GITHUB_TOKEN -t $(REPO_NAME):$$ENV .
 
+# Deprecated
 .PHONY: docker-push
 docker-push: docker-build
 	@echo "tag & push image"
