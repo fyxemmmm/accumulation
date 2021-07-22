@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus
+  namespace: monitor-sa
+  labels:
+    app: prometheus
+spec:
+  type: NodePort
+  ports:
+    - port: 9090
+      targetPort: 9090
+      protocol: TCP
+  selector:
+    app: prometheus
+    component: server
+
