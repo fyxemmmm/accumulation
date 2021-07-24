@@ -1,0 +1,27 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: alertmanager
+  namespace: monitor-sa
+data:
+  alertmanager.yml: |-
+    global:
+      resolve_timeout: 1m
+      smtp_smarthost: 'smtp.qq.com:465'
+      smtp_from: '979**517@qq.com'
+      smtp_auth_username: '979***17@qq.com'
+      smtp_auth_password: 'ewlb***mbbjd'
+      smtp_require_tls: false
+    route:
+      group_by: [alertname]
+      group_wait: 10s # 产生告警后等待10秒，如果同一个组还有报警，那就合并一起发出去
+      group_interval: 10s # 两组告警的间隔时间， 不同组之间的间隔时间
+      repeat_interval: 100m  # 告警频率
+      receiver: default-receiver
+    receivers:
+    - name: 'default-receiver'
+      email_configs:
+      - to: '1896****0@163.com'
+        send_resolved: true
+
+
