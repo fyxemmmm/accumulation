@@ -1,0 +1,314 @@
+# 默认的alertmanager中的secret叫 alertmanager-main,修改其中的yaml文件即可
+# 参考1
+global:
+  resolve_timeout: 1m
+  smtp_smarthost: 'smtp.qq.com:465'
+  smtp_from: '979x17@qq.com'
+  smtp_auth_username: '979x17@qq.com'
+  smtp_auth_password: 'ewlzzzxzumbbjd'
+  smtp_require_tls: false
+route:
+  group_by: [alertname]
+  group_wait: 10s # 产生告警后等待10秒，如果同一个组还有报警，那就合并一起发出去
+  group_interval: 10s # 两组告警的间隔时间， 不同组之间的间隔时间
+  repeat_interval: 720m  # 告警频率
+  receiver: default-receiver
+receivers:
+  - name: 'default-receiver'
+    email_configs:
+      - to: '18964zxzxxz0@163.com'
+        send_resolved: true
+---
+# 参考2
+global:
+  # 当alertmanager持续多长时间未接收到告警后标记告警状态为 resolved
+  resolve_timeout: 5m
+  # 配置邮件发送信息
+  smtp_smarthost: 'smtp.163.com:25'
+  smtp_from: 'xxxx@163.com'
+  smtp_auth_username: 'xxxx@163.com'
+  smtp_auth_password: '<邮箱密码>'
+  smtp_hello: '163.com'
+  smtp_require_tls: false
+# 所有报警信息进入后的根路由，用来设置报警的分发策略
+route:
+  # 这里的标签列表是接收到报警信息后的重新分组标签，例如，接收到的报警信息里面有许多具有 cluster=A 和 alertname=LatncyHigh 这样的标签的报警信息将会批量被聚合到一个分组里面
+  group_by: ['alertname', 'cluster']
+  # 当一个新的报警分组被创建后，需要等待至少 group_wait 时间来初始化通知，这种方式可以确保您能有足够的时间为同一分组来获取多个警报，然后一起触发这个报警信息。
+  group_wait: 30s  # 做聚合用的
+  # 相同的group之间发送告警通知的时间间隔
+  group_interval: 30s   # 因为有可能下面的报警会发送失败
+  # 如果一个报警信息已经发送成功了，等待 repeat_interval 时间来重新发送他们，不同类型告警发送频率需要具体配置
+  repeat_interval: 1h
+  # 默认的receiver：如果一个报警没有被一个route匹配，则发送给默认的接收器
+  receiver: default
+  # 上面所有的属性都由所有子路由继承，并且可以在每个子路由上进行覆盖。
+  routes:
+  - receiver: email
+    group_wait: 10s
+    match:
+      team: node   # team标签是node的路由到下面的email的receiver
+receivers:
+- name: 'default'
+  email_configs:
+  - to: 'xxxxx@qq.com'
+    send_resolved: true  # 接受告警恢复的通知
+- name: 'email'
+  email_configs:
+  - to: 'xxxxx@qq.com'
+    send_resolved: true
+---
+# op默认的配置
+"global":
+  "resolve_timeout": "5m"
+"inhibit_rules":
+  - "equal":
+      - "namespace"
+      - "alertname"
+    "source_match":
+      "severity": "critical"
+    "target_match_re":
+      "severity": "warning|info"
+  - "equal":
+      - "namespace"
+      - "alertname"
+    "source_match":
+      "severity": "warning"
+    "target_match_re":
+      "severity": "info"
+"receivers":
+  - "name": "Default"
+  - "name": "Watchdog"
+  - "name": "Critical"
+"route":
+  "group_by":
+    - "namespace"
+  "group_interval": "5m"
+  "group_wait": "30s"
+  "receiver": "Default"
+  "repeat_interval": "12h"
+  "routes":
+    - "match":
+        "alertname": "Watchdog"
+      "receiver": "Watchdog"
+    - "match":
+        "severity": "critical"
+      "receiver": "Critical"
+---
+# operator的prometheus会选中有 prometheus: k8s role: alert-rules标签的 PrometheusRule
+# operator会将其选中并动态加载到prometheus中的配置文件目录中去. xxx/.*config, 自然就可以加载到了
+---
+
+## ServiceMonitor例子
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  labels:
+    app.kubernetes.io/name: kubelet
+  name: kubelet
+  namespace: monitoring
+spec:
+  endpoints:
+    - bearerTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
+      interval: 15s
+      port: https
+      relabelings:
+        - action: replace
+          regex: (.*)
+          replacement: $1
+          sourceLabels:
+            - __meta_kubernetes_pod_node_name
+          targetLabel: instance
+      scheme: https
+      tlsConfig:
+        insecureSkipVerify: true
+    - bearerTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
+      honorLabels: true
+      interval: 30s
+      port: https-main
+      relabelings:
+        - action: labeldrop
+          regex: (pod|service|endpoint|namespace)
+      scheme: https
+      scrapeTimeout: 30s
+      tlsConfig:
+        insecureSkipVerify: true
+    - bearerTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
+      honorLabels: true
+      interval: 30s
+      metricRelabelings:
+        - action: drop
+          regex: transformation_(transformation_latencies_microseconds|failures_total)
+          sourceLabels:
+            - __name__
+      port: https-metrics # service中定义的port name
+      relabelings:
+        - sourceLabels:
+            - __metrics_path__
+          targetLabel: metrics_path
+      scheme: https
+      tlsConfig:
+        insecureSkipVerify: true
+    - bearerTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
+      honorLabels: true
+      honorTimestamps: false
+      interval: 30s
+      metricRelabelings:
+        - action: drop
+          regex: container_(network_tcp_usage_total|network_udp_usage_total|tasks_state|cpu_load_average_10s)
+          sourceLabels:
+            - __name__
+        - action: drop
+          regex: (container_fs_.*|container_spec_.*|container_blkio_device_usage_total|container_file_descriptors|container_sockets|container_threads_max|container_threads|container_start_time_seconds|container_last_seen);;
+          sourceLabels:
+            - __name__
+            - pod
+            - namespace
+      path: /metrics/cadvisor
+      port: https-metrics
+      relabelings:
+        - sourceLabels:
+            - __metrics_path__
+          targetLabel: metrics_path
+      scheme: https
+      tlsConfig:
+        insecureSkipVerify: true
+    - bearerTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
+      honorLabels: true
+      interval: 30s
+      path: /metrics/probes
+      port: https-metrics
+      relabelings:
+        - sourceLabels:
+            - __metrics_path__
+          targetLabel: metrics_path
+      scheme: https
+      tlsConfig:
+        insecureSkipVerify: true
+  jobLabel: app.kubernetes.io/name
+  namespaceSelector:
+    matchNames:
+      - kube-system
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: kubelet
+---
+# 例2
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: ceph-metrics
+  namespace: monitoring
+  labels:
+    monitor-app: ceph-metrics
+spec:
+  namespaceSelector:
+    matchNames:
+      - default
+  selector:
+    matchLabels:
+      service: ceph-metrics-svc
+  endpoints:
+    - port: metrics
+      path: /metrics
+      relabelings:
+        - action: replace
+          sourceLabels: ['__address__']
+          separator: ':'
+          regex: '.*'
+          targetLabel: 'instance'
+          replacement: 'ceph-metrics-svc:9128'
+        - action: replace
+          sourceLabels: ['__address__']
+          separator: ':'
+          regex: '.*'
+          targetLabel: 'pod'
+          replacement: 'ceph-metrics'
+
+---
+# 添加自定义服务发现
+# prometheus-additional.yaml
+- job_name: 'kubernetes-endpoints'
+  kubernetes_sd_configs:
+    - role: endpoints
+  relabel_configs:
+    - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_scrape]
+      action: keep
+      regex: true
+    - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_scheme]
+      action: replace
+      target_label: __scheme__
+      regex: (https?)
+    - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_path]
+      action: replace
+      target_label: __metrics_path__
+      regex: (.+)
+    - source_labels: [__address__, __meta_kubernetes_service_annotation_prometheus_io_port]
+      action: replace
+      target_label: __address__
+      regex: ([^:]+)(?::\d+)?;(\d+)
+      replacement: $1:$2
+    - action: labelmap
+      regex: __meta_kubernetes_service_label_(.+)
+    - source_labels: [__meta_kubernetes_namespace]
+      action: replace
+      target_label: kubernetes_namespace
+    - source_labels: [__meta_kubernetes_service_name]
+      action: replace
+      target_label: kubernetes_name
+    - source_labels: [__meta_kubernetes_pod_name]
+      action: replace
+      target_label: kubernetes_pod_name
+# kubectl create secret generic additional-configs --from-file=prometheus-additional.yaml -n monitoring
+# 之后在prometheus的配置中, 新增additionalScrapeConfigs即可
+---
+# prometheus op demo
+apiVersion: monitoring.coreos.com/v1
+kind: Prometheus
+metadata:
+  labels:
+    prometheus: k8s
+  name: k8s
+  namespace: monitoring
+spec:
+  alerting:
+    alertmanagers:
+      - name: alertmanager-main
+        namespace: monitoring
+        port: web
+  image: quay.io/prometheus/prometheus:v2.15.2
+  nodeSelector:
+    kubernetes.io/os: linux
+  podMonitorNamespaceSelector: {}
+  podMonitorSelector: {}
+  replicas: 2
+  retention: 6h  # 本地只保留6h小时的数据
+  resources:
+    requests:
+      memory: 400Mi
+  ruleSelector:
+    matchLabels:
+      prometheus: k8s
+      role: alert-rules
+  securityContext:
+    fsGroup: 2000
+    runAsNonRoot: true
+    runAsUser: 1000
+  serviceAccountName: prometheus-k8s
+  serviceMonitorNamespaceSelector: {}
+  serviceMonitorSelector: {}
+  version: v2.15.2
+  additionalScrapeConfigs:  # 添加服务发现的配置
+    name: additional-configs
+    key: prometheus-additional.yaml
+  storage:  # 添加本地数据持久化
+    volumeClaimTemplate:
+      spec:
+        storageClassName: rook-ceph-block
+        resources:
+          requests:
+            storage: 20Gi
+  thanos:  #  添加 thanos 配置
+    objectStorageConfig:
+      key: thanos.yaml
+      name: thanos-objectstorage  # 对象存储对应的 secret 资源对象
