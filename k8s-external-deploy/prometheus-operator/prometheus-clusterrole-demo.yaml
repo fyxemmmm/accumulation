@@ -1,3 +1,4 @@
+# 自定义服务发现可能需要权限，所以先打开权限！
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
