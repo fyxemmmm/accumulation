@@ -12,15 +12,24 @@ spec:
   groups:
     - name: etcd
       rules:
-        - alert: EtcdClusterUnavailable
-          annotations:
-            summary: etcd cluster small
-            description: If one more etcd peer goes down the cluster will be unavailable
-          expr: |
-            count(up{job="etcd"} == 0) > (count(up{job="etcd"}) / 2 - 1)
-          for: 3m
+#        - alert: EtcdClusterUnavailable
+#          annotations:
+#            summary: etcd cluster small
+#            description: If one more etcd peer goes down the cluster will be unavailable
+#          expr: |
+#            count(up{job="etcd"} == 0) > (count(up{job="etcd"}) / 2 - 1)
+#          for: 3m
+#          labels:
+#            severity: critical
+        - alert: PodRestart
+          expr: kube_pod_container_status_restarts_total{namespace=~"kube-system|default|monitor-sa"} > 0
+          for: 2s
           labels:
-            severity: critical
+            severity: warning  # 可以进行alertmanager的路由
+          annotations:
+            summary: pod has already restart
+            description: "在{{$labels.namespace}}名称空间下发现{{$labels.pod}}这个pod下的容器{{$labels.container}}被重启,这个监控指标是由{{$labels.instance}}采集的"
+            value: "{{ $value }}"
 ---
 # demo2
 apiVersion: monitoring.coreos.com/v1

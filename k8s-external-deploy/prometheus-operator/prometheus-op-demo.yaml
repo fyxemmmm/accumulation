@@ -55,7 +55,7 @@ spec:
   podMonitorNamespaceSelector: {}
   podMonitorSelector: {}
   replicas: 2
-  retention: 6h  # 本地只保留6h小时的数据
+#  retention: 6h  # 本地只保留6h小时的数据
   resources:
     requests:
       memory: 400Mi
