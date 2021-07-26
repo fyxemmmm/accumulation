@@ -1,4 +1,4 @@
-#### git clone https://github.com/coreos/kube-prometheus.git
+#### git clone https://github.com/coreos/kube-prometheus.git || https://github.com/fyxemmmm/kube-prometheus.git
 #### cd manifests
 #### kubectl apply -f setup/
 #### kubectl apply -f .
