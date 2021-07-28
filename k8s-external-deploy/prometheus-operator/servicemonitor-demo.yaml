@@ -1,0 +1,174 @@
+## ServiceMonitor例子
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  labels:
+    app.kubernetes.io/name: kubelet
+  name: kubelet
+  namespace: monitoring
+spec:
+  endpoints:
+    - bearerTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
+      interval: 15s
+      port: https
+      relabelings:
+        - action: replace
+          regex: (.*)
+          replacement: $1
+          sourceLabels:
+            - __meta_kubernetes_pod_node_name
+          targetLabel: instance
+      scheme: https
+      tlsConfig:
+        insecureSkipVerify: true
+    - bearerTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
+      honorLabels: true
+      interval: 30s
+      port: https-main
+      relabelings:
+        - action: labeldrop
+          regex: (pod|service|endpoint|namespace)
+      scheme: https
+      scrapeTimeout: 30s
+      tlsConfig:
+        insecureSkipVerify: true
+    - bearerTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
+      honorLabels: true
+      interval: 30s
+      metricRelabelings:
+        - action: drop
+          regex: transformation_(transformation_latencies_microseconds|failures_total)
+          sourceLabels:
+            - __name__
+      port: https-metrics # service中定义的port name
+      relabelings:
+        - sourceLabels:
+            - __metrics_path__
+          targetLabel: metrics_path
+      scheme: https
+      tlsConfig:
+        insecureSkipVerify: true
+    - bearerTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
+      honorLabels: true
+      honorTimestamps: false
+      interval: 30s
+      metricRelabelings:
+        - action: drop
+          regex: container_(network_tcp_usage_total|network_udp_usage_total|tasks_state|cpu_load_average_10s)
+          sourceLabels:
+            - __name__
+        - action: drop
+          regex: (container_fs_.*|container_spec_.*|container_blkio_device_usage_total|container_file_descriptors|container_sockets|container_threads_max|container_threads|container_start_time_seconds|container_last_seen);;
+          sourceLabels:
+            - __name__
+            - pod
+            - namespace
+      path: /metrics/cadvisor
+      port: https-metrics
+      relabelings:
+        - sourceLabels:
+            - __metrics_path__
+          targetLabel: metrics_path
+      scheme: https
+      tlsConfig:
+        insecureSkipVerify: true
+    - bearerTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
+      honorLabels: true
+      interval: 30s
+      path: /metrics/probes
+      port: https-metrics
+      relabelings:
+        - sourceLabels:
+            - __metrics_path__
+          targetLabel: metrics_path
+      scheme: https
+      tlsConfig:
+        insecureSkipVerify: true
+  jobLabel: app.kubernetes.io/name
+  namespaceSelector:
+    matchNames:
+      - kube-system
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: kubelet
+---
+# 例2
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: ceph-metrics
+  namespace: monitoring
+  labels:
+    monitor-app: ceph-metrics
+spec:
+  namespaceSelector:
+    matchNames:
+      - default
+  selector:
+    matchLabels:
+      service: ceph-metrics-svc
+  endpoints:
+    - port: metrics
+      path: /metrics
+      relabelings:
+        - action: replace
+          sourceLabels: ['__address__']
+          separator: ':'
+          regex: '.*'
+          targetLabel: 'instance'
+          replacement: 'ceph-metrics-svc:9128'
+        - action: replace
+          sourceLabels: ['__address__']
+          separator: ':'
+          regex: '.*'
+          targetLabel: 'pod'
+          replacement: 'ceph-metrics'
+---
+#例3 etcd
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: etcd-k8s
+  namespace: monitoring
+  labels:
+    k8s-app: etcd-k8s
+spec:
+  jobLabel: k8s-app
+  endpoints:
+    - port: port
+      interval: 15s
+  selector:
+    matchLabels:
+      k8s-app: etcd
+  namespaceSelector:
+    matchNames:
+      - kube-system
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: etcd-k8s
+  namespace: kube-system
+  labels:
+    k8s-app: etcd
+spec:
+  type: ClusterIP
+  clusterIP: None  # 一定要设置 clusterIP:None
+  ports:
+    - name: port
+      port: 2381
+---
+apiVersion: v1
+kind: Endpoints
+metadata:
+  name: etcd-k8s
+  namespace: kube-system
+  labels:
+    k8s-app: etcd
+subsets:
+  - addresses:
+      - ip: 192.168.0.191  # 指定etcd节点地址，如果是集群则继续向下添加
+        nodeName: etc-master
+    ports:
+      - name: port
+        port: 2381

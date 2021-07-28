@@ -1,0 +1,29 @@
+# 自定义服务发现可能需要权限，所以先打开权限！
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: prometheus-k8s
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - nodes
+      - services
+      - endpoints
+      - pods
+      - nodes/proxy
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps
+      - nodes/metrics
+    verbs:
+      - get
+  - nonResourceURLs:
+      - /metrics
+    verbs:
+      - get
