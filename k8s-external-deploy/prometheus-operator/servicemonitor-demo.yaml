@@ -172,3 +172,39 @@ subsets:
     ports:
       - name: port
         port: 2381
+---
+# 例4
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: mygauge
+  namespace: default
+spec:
+  jobLabel: mygauge
+  namespaceSelector:
+    matchNames:
+      - default
+  selector:
+    matchLabels:
+      service: myprom-mygauge
+  endpoints:
+    - port: mygauge
+      path: /metrics
+      interval: 15s
+      metricRelabelings:
+        - action: drop
+          regex: .*celsius
+          sourceLabels:
+            - __name__   # cpu_temperature_celsius这个指标名不会被采集
+      relabelings:
+        - action: replace
+          sourceLabels: [ '__address__' ]
+          separator: ':'
+          regex: '(.*)'
+          targetLabel: 'additionLabel1'
+          replacement: '$1'
+        - action: replace
+          targetLabel: 'test2label'
+          replacement: 't2labelvalue'
+        - action: labeldrop
+          regex: (pod|service|endpoint|namespace)
