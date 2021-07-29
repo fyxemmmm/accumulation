@@ -208,3 +208,5 @@ spec:
           replacement: 't2labelvalue'
         - action: labeldrop
           regex: (pod|service|endpoint|namespace)
+        - action: labelmap
+          regex: __meta_kubernetes_endpoint_(.+)
