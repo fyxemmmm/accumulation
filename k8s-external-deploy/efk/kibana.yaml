@@ -6,9 +6,14 @@ metadata:
 data:
   config: |
     server.name: kibana
-    server.host: "0"
-    elasticsearch.hosts: [ "http://elasticsearch-master:9200" ]
+    server.host: "0.0.0.0"
+    elasticsearch.hosts: [ "http://es-out:9200" ]
     monitoring.ui.container.elasticsearch.enabled: true
+    xpack.encryptedSavedObjects.encryptionKey: 'fhjskloppd678ehkdfdlliverpoolfcr'
+    xpack.security.encryptionKey: encryptionKeysecurity12345578909876543210
+    xpack.reporting.encryptionKey: encryptionKeyreporting12345678909876543210
+    elasticsearch.username: "kibana_system"
+    elasticsearch.password: "passwd"
 ---
 apiVersion: v1
 kind: Service
@@ -21,9 +26,9 @@ spec:
   selector:
     component: kibana
   ports:
-    - name: http
-      port: 5601
-      targetPort: http
+  - name: http
+    port: 5601
+    targetPort: http
   type: ClusterIP
 ---
 apiVersion: apps/v1
@@ -35,26 +40,30 @@ spec:
   replicas: 1
   selector:
     matchLabels:
-      component: kibana
+     component: kibana
   template:
     metadata:
       labels:
         component: kibana
     spec:
       containers:
-        - name: kibana
-          image: kibana:7.10.1
-          ports:
-            - containerPort: 5601
-              name: http
-          volumeMounts:
-            - name: "kibana-conf"
-              mountPath: "/usr/share/kibana/config/kibana.yml"
-              subPath: kibana.yml
-      volumes:
+      - name: kibana
+        image: kibana:7.10.1
+        ports:
+        - containerPort: 5601
+          name: http
+        volumeMounts:
         - name: "kibana-conf"
-          configMap:
-            name: "kibana"
-            items:
-              - key: "config"
-                path: "kibana.yml"
+          mountPath: "/usr/share/kibana/config/kibana.yml"
+          subPath: kibana.yml
+        resources:
+          requests:
+            cpu: 2000m
+            memory: 5Gi
+      volumes:
+      - name: "kibana-conf"
+        configMap:
+          name: "kibana"
+          items:
+            - key: "config"
+              path: "kibana.yml"

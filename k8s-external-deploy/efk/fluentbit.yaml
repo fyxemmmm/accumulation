@@ -23,35 +23,35 @@ spec:
         prometheus.io/path: /api/v1/metrics/prometheus
     spec:
       containers:
-        - name: fluent-bit
-          image: fluent/fluent-bit:1.5
-          imagePullPolicy: IfNotPresent
-          ports:
-            - containerPort: 2020
-          env:
-            - name: FLUENT_ELASTICSEARCH_HOST
-              value: "elasticsearch-master"
-            - name: FLUENT_ELASTICSEARCH_PORT
-              value: "9200"
-          volumeMounts:
-            - name: varlog
-              mountPath: /var/log
-            - name: varlibdockercontainers
-              mountPath: /var/lib/docker/containers
-              readOnly: true
-            - name: fluent-bit-config
-              mountPath: /fluent-bit/etc/
+      - name: fluent-bit
+        image: fluent/fluent-bit:1.5
+        imagePullPolicy: IfNotPresent
+        ports:
+          - containerPort: 2020
+        env:
+        - name: FLUENT_ELASTICSEARCH_HOST
+          value: "es-out"
+        - name: FLUENT_ELASTICSEARCH_PORT
+          value: "9200"
+        volumeMounts:
+        - name: varlog
+          mountPath: /var/log
+        - name: varlibdockercontainers
+          mountPath: /var/lib/docker/containers
+          readOnly: true
+        - name: fluent-bit-config
+          mountPath: /fluent-bit/etc/
       terminationGracePeriodSeconds: 10
       volumes:
-        - name: varlog
-          hostPath:
-            path: /var/log
-        - name: varlibdockercontainers
-          hostPath:
-            path: /var/lib/docker/containers
-        - name: fluent-bit-config
-          configMap:
-            name: fluent-bit-config
+      - name: varlog
+        hostPath:
+          path: /var/log
+      - name: varlibdockercontainers
+        hostPath:
+          path: /var/lib/docker/containers
+      - name: fluent-bit-config
+        configMap:
+          name: fluent-bit-config
       serviceAccountName: fluent-bit
 ---
 apiVersion: v1
@@ -82,7 +82,7 @@ data:
     [INPUT]
         Name              tail
         Tag               kube.*
-        Path              /var/log/containers/*.log
+        Path              /var/log/containers/*_default_*.log
         Parser            cri
         DB                /var/log/flb_kube.db
         Mem_Buf_Limit     1000MB
@@ -111,6 +111,8 @@ data:
         Logstash_Format On
         Replace_Dots    On
         Retry_Limit     False
+        HTTP_User       elastic
+        HTTP_Passwd     passwd
 
   parsers.conf: |
     [PARSER]
@@ -168,11 +170,13 @@ data:
         Time_Format %b %d %H:%M:%S
 
     [PARSER]
-        Name        mylog
-        Format      regex
-        Regex       .*
+        # http://rubular.com/r/tjUt3Awgg4
+        Name mycri
+        Format regex
+        Regex ^(?<time>[^ ]+) (?<stream>stdout|stderr) (?<logtag>[^ ]*) (?<message>.*)$
         Time_Key    time
-        Time_Format %b %d %H:%M:%S
+        Time_Format %Y-%m-%dT%H:%M:%S.%L%z
+
 
 ---
 apiVersion: rbac.authorization.k8s.io/v1beta1
@@ -180,11 +184,11 @@ kind: ClusterRole
 metadata:
   name: fluent-bit-read
 rules:
-  - apiGroups: [""]
-    resources:
-      - namespaces
-      - pods
-    verbs: ["get", "list", "watch"]
+- apiGroups: [""]
+  resources:
+  - namespaces
+  - pods
+  verbs: ["get", "list", "watch"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: ClusterRoleBinding
@@ -195,9 +199,9 @@ roleRef:
   kind: ClusterRole
   name: fluent-bit-read
 subjects:
-  - kind: ServiceAccount
-    name: fluent-bit
-    namespace: logging
+- kind: ServiceAccount
+  name: fluent-bit
+  namespace: logging
 ---
 apiVersion: v1
 kind: ServiceAccount

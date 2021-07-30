@@ -1,0 +1,116 @@
+# cat es-cm.yml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: es
+  namespace: logging
+data:
+  elasticsearch.yml: |
+    node.name: elasticsearch
+    network.host: 0.0.0.0
+    path.data: /usr/share/elasticsearch/data
+    discovery.type: single-node
+    xpack.security.enabled: true
+    xpack.monitoring.enabled: true
+    xpack.monitoring.collection.enabled: true
+---
+# es-statefulset.yml
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: es
+  namespace: logging
+  labels:
+    k8s-app: es
+spec:
+  replicas: 1
+  serviceName: es
+  selector:
+    matchLabels:
+      k8s-app: es
+  template:
+    metadata:
+      labels:
+        k8s-app: es
+    spec:
+      initContainers:
+      - name: "configure-sysctl"
+        securityContext:
+          runAsUser: 0
+          privileged: true
+        image: elasticsearch:7.10.1
+        imagePullPolicy: "IfNotPresent"
+        command: [ "sysctl", "-w", "vm.max_map_count=262144" ]
+      containers:
+      - name: es
+        image: elasticsearch:7.10.1
+        ports:
+          - name: out
+            containerPort: 9200
+        env:
+          - name: NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+          - name: POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          - name: ES_JAVA_OPTS
+            value: "-Xms20g -Xmx20g"
+        resources:
+          requests:
+            cpu: 3000m
+            memory: 20Gi
+        volumeMounts:
+          - name: es-storage
+            mountPath: /usr/share/elasticsearch/data
+          - name: es-config
+            mountPath: /usr/share/elasticsearch/config/elasticsearch.yml
+            subPath: elasticsearch.yml
+      volumes:
+        - name: es-config
+          configMap:
+            name: es
+  volumeClaimTemplates:
+    - metadata:
+        name: es-storage
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 150Gi
+---
+# cat es-svc-in.yml
+#apiVersion: v1
+#kind: Service
+#metadata:
+#  name: es-in
+#  namespace: logging
+#  labels:
+#    k8s-app: es
+#spec:
+#  selector:
+#    k8s-app: es
+#  clusterIP: None
+#  ports:
+#    - name: in
+#      port: 9300
+#      protocol: TCP
+---
+# cat es-svc-out.yml
+apiVersion: v1
+kind: Service
+metadata:
+  name: es-out
+  namespace: logging
+  labels:
+    k8s-app: es
+spec:
+  selector:
+    k8s-app: es
+  ports:
+    - name: out
+      port: 9200
+      protocol: TCP

@@ -2,17 +2,18 @@
 # prometheus-additional.yaml
 - job_name: 'kubernetes-endpoints'
   kubernetes_sd_configs:
-    - role: endpoints
+    - role: endpoints # kubectl get ep -A
   relabel_configs:
+    # prometheus/io.scrape = "true"
     - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_scrape]
-      action: keep
+      action: keep  # where svc: scrape: true
       regex: true
     - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_scheme]
       action: replace
       target_label: __scheme__
       regex: (https?)
     - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_path]
-      action: replace
+      action: replace  # /metries  prometheus_io_path: /metrcis2aa
       target_label: __metrics_path__
       regex: (.+)
     - source_labels: [__address__, __meta_kubernetes_service_annotation_prometheus_io_port]
@@ -20,7 +21,7 @@
       target_label: __address__
       regex: ([^:]+)(?::\d+)?;(\d+)
       replacement: $1:$2
-    - action: labelmap
+    - action: labelmap # 标签保留  (.+)
       regex: __meta_kubernetes_service_label_(.+)
     - source_labels: [__meta_kubernetes_namespace]
       action: replace
@@ -73,11 +74,11 @@ spec:
   version: v2.15.2
   additionalScrapeConfigs:  # 添加服务发现的配置
     name: additional-configs
-    key: prometheus-additional.yaml
+    key: prometheus-additional.yaml # servicemonitor
   storage:  # 添加本地数据持久化
     volumeClaimTemplate:
       spec:
-        storageClassName: rook-ceph-block  # 填写storage class
+        storageClassName: csi-rbd-sc  # 填写storage class
         resources:
           requests:
             storage: 20Gi
