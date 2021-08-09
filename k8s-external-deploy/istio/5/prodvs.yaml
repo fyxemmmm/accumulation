@@ -1,0 +1,33 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: prodvs
+  namespace: myistio
+spec:
+  hosts:
+    - pp.fyxemmmm.com
+    - prodsvc
+  gateways:
+    - pp-gateway
+  http:
+  - match:
+    - uri:
+       prefix: "/p"
+    rewrite:
+       uri: "/prods"
+    route:
+     - destination:
+        host: prodsvc  # 选择host中的某个subset
+        subset: v1svc
+        port:
+          number: 80
+  - match:
+    - uri:
+       prefix: "/r"
+    rewrite:
+       uri: "/reviews"
+    route:
+      - destination:
+          host: reviewsvc
+          port:
+            number: 80

@@ -1,0 +1,21 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: prodvs
+  namespace: myistio
+spec:
+  hosts:
+    # 内部服务访问 prodsvc/p/123的时候路径会被重写成 prodsvc/prods/123
+    # 原先的prods的prefix在内部会失效
+    - prodsvc
+  http:
+  - match:
+    - uri:
+       prefix: "/p"
+    rewrite:
+       uri: "/prods"
+    route:
+     - destination:
+        host: prodsvc
+        port:
+          number: 80
