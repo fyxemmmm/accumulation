@@ -8,3 +8,7 @@
 - channel底层原理: https://blog.csdn.net/u010853261/article/details/85231944
 - select底层原理: https://www.jianshu.com/p/5923cde1b6a3
 - 内存管理: https://mp.weixin.qq.com/s/HJB_ATQFNqG82YBCRr97CA
+- channel、map释放问题: http://xiaorui.cc/archives/5450
+- 抓包mysql事务: http://xiaorui.cc/archives/5394
+- go信号式抢占调度: http://xiaorui.cc/archives/6535
+- fasthttp body错乱问题: https://cloud.tencent.com/developer/news/462918
