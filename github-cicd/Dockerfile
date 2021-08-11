@@ -1,23 +1,17 @@
-FROM golang:1.14-alpine AS compiler
+FROM golang:1.14-alpine as builder
 
+# privaite repo go module
 RUN apk add --no-cache git openssh-client
-
-ARG GITHUB_USER
-ARG GITHUB_TOKEN
+ARG	GITHUB_USER
+ARG	GITHUB_TOKEN
+# docker build --build-arg GITHUB_USER=$$GITHUB_USER --build-arg GITHUB_TOKEN=$$GITHUB_TOKEN -t $(REPO_NAME):$$ENV .
 RUN echo "machine github.com login ${GITHUB_USER} password ${GITHUB_TOKEN}" > ~/.netrc
 
-WORKDIR /go/src/app
-COPY ./ ./
-RUN pwd
-RUN ls
+WORKDIR /myapp
+COPY . .
+RUN  CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o user-activity ./cmd/serve/main.go
 
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o app .
-RUN ls
-
-FROM alpine:latest
-RUN apk --no-cache add tzdata ca-certificates
-WORKDIR /root/
-RUN pwd
-COPY --from=compiler /go/src/app/app /root/app
-RUN ls
-ENTRYPOINT ["/root/app/aci-court"]
+FROM alpine
+WORKDIR /
+COPY --from=builder /myapp/*  /
+ENTRYPOINT ["./entrypoint.sh"]

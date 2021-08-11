@@ -1,0 +1,63 @@
+version: 2.1
+
+jobs:
+  build:
+    docker:
+      - image: ankrnetwork/alpine:v2.0.0
+    steps:
+      - checkout
+      - setup_remote_docker
+      - run:
+          name: "decrypt k8s config"
+          command: data=$(cat /root/.kube/oentext ); crypt aes -k=$kubekey -e=false -d=$data > /root/.kube/config
+      - run:
+          name: "Login Docker Repositories"
+          command: docker login -u $DOCKER_HUB_USER -p $DOCKER_HUB_TOKEN
+      - run:
+          name: "Build & Push Docker Image"
+          command: |
+            make docker-push
+      - run:
+          name: "Load Kubeconfig"
+          command: |
+            set -ex
+            if [[ $CIRCLE_BRANCH == "stage" ]]
+            then
+              K8S_CLUSTER="stage.hub"
+            elif [[ $CIRCLE_BRANCH == "master" ]]
+            then
+              K8S_CLUSTER="hub"
+            else
+              exit 1
+            fi
+
+            kubectl config use-context $K8S_CLUSTER.k8s.ankr.network
+
+            if [[ $K8S_CLUSTER == "dev.hub" ]]
+            then
+               host=api-dev.ankr.com
+            elif [[ $K8S_CLUSTER == "hub" ]]
+            then
+               host=hub.ankr.com
+            elif [[ $K8S_CLUSTER == "stage.hub" ]]
+            then
+               host=hub-stage.ankr.com
+            fi
+            echo "host: $host"
+            sed -ri "s@match: Host\(\`(.*) && (.*)@match: Host(\`$host\`\) \&\& \2@" deployments/ingressroute.yaml
+            kubectl apply -f deployments/ingressroute.yaml
+
+      - run:
+          name: "Deploy Job"
+          command: |
+            set -ex
+            d=`date +"%Y%m%d%H%M%S"`
+            replace="t${d}"
+            sed -ri 's/mydate.*/mydate: '''$replace'''/' deployments/deployment.yaml
+            kubectl apply -f deployments/deployment.yaml
+workflows:
+  version: 2
+  user-activity:
+    jobs:
+      - build:
+          context: cicd

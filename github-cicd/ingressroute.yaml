@@ -1,0 +1,27 @@
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: user-activity
+spec:
+  stripPrefixRegex:
+    regex:
+      - /[a-zA-Z0-9]+-[a-zA-Z0-9]+
+---
+
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: user-activity
+spec:
+  entryPoints:
+    - web
+  routes:
+    - kind: Rule
+      match: Host(`@variable@`) && PathPrefix(`/user-activity`)
+      middlewares:
+        - name: cors
+        - name: auth-gateway
+        - name: user-activity
+      services:
+        - name: user-activity
+          port: 80

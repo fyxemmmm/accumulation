@@ -1,11 +1,11 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: fyxtest
+  name: prometheus-prometheus-ankr-prometheus-db-prometheus-prometheus-ankr-prometheus-0
   namespace: monitoring
 spec:
   accessModes:
     - ReadWriteOnce
   resources:
     requests:
-      storage: 2Gi
+      storage: 200Gi
