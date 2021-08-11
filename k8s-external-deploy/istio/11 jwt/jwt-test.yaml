@@ -1,0 +1,38 @@
+apiVersion: security.istio.io/v1beta1
+kind: RequestAuthentication
+metadata:
+  name: jwt-test
+  namespace: istio-system
+spec:
+  selector:
+    matchLabels:
+      istio: ingressgateway
+  jwtRules:
+    # issuer  签发者
+    - issuer: "user@fyxemmmm.cn"
+      jwks: |
+        {
+            "keys": [
+                {
+                  "e":"AQAB",
+                  "kty":"RSA",
+                  "n":"vjckitm60zMsCHHPcRKXh-aVXC7Kx4VpAKiLFw0XGIxsrkGtk7ZUefDSguktkcZJniej8jxogdfOc2Qwm421iJaQFQ4K9bbstiPA2n2flVS-Vtv2ZjRcKmu6XIhvSVlOW9MZn9_PUV_RYSUEGJdKNsYD5ohu27cejQhlXn8srwbv7sEsR7-zrEjwl74W7LJNvlj1uQMW7OX-OzzXRtRjBjL_VFRKJONF4f8Hvt3fWyoTK-C8yIW_a8WIb3YgJf9y2QHSvjQFGF6BB8J6Wq2BpMczt3baIurb4qK09rlsoxCqMnM_aIDnGoFdgWJ8nJfdY6th-OpCFlSm1-SKeJHLnQ"
+                }
+            ]
+        }
+      forwardOriginalToken: true  # 会直接把jwt的base64数据回传给业务api
+      outputPayloadToHeader: "Userinfo"  # 传递给业务api, 结构体name是userinfo, 内容是之前payload里的key value键值对
+---
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: prod-authpolicy
+  namespace: istio-system
+spec:
+  selector:
+    matchLabels:
+      istio: ingressgateway
+  rules:
+    - from:
+        - source:
+            requestPrincipals: ["*"] # 所有请求都需要进行认证

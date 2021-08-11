@@ -1,0 +1,48 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: prodvs
+  namespace: myistio
+spec:
+  hosts:
+    - pp.fyxemmmm.cn
+    - prodsvc
+    - reviewsvc
+  gateways:
+    - pp-gateway
+    - mesh
+  http:
+  - match:
+    - uri:
+       prefix: "/p"
+    rewrite:
+       uri: "/prods"
+#    fault:
+ #       delay:
+#        fixedDelay: 3s
+#        percentage:
+#          value: 100
+    route:
+     - destination:
+        host: prodsvc
+        subset: v1svc
+        port:
+          number: 80
+    timeout: 1s  # 超时1秒
+  - match:
+      - uri:
+          prefix: "/"
+#    - uri:
+#       prefix: "/r"
+#    rewrite:
+#       uri: "/reviews"
+#    fault:
+#      abort:
+#        httpStatus: 502
+#        percentage:
+#          value: 100
+    route:
+      - destination:
+          host: reviewsvc
+          port:
+            number: 80

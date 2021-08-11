@@ -1,0 +1,31 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: prod-rule
+  namespace: myistio
+spec:
+  host: prodsvc
+  trafficPolicy:
+    loadBalancer:
+       simple: ROUND_ROBIN
+#      consistentHash:
+#        #httpHeaderName: myname
+#        useSourceIp: true
+    connectionPool:
+      tcp:
+        maxConnections: 1
+      http:
+        http2MaxRequests: 1
+        maxRequestsPerConnection: 1
+    # 默认是2个deployment，service selector选中的2个dep的标签
+    outlierDetection:
+#      consecutive5xxErrors: 2
+      interval: 10.0s  # 如果10秒内连续发生
+      maxEjectionPercent: 60 # 最大驱逐百分比 默认10%, 50代表驱散一半的服务Pod
+      baseEjectionTime: 10s  # 驱逐时间10秒
+  subsets:
+    - name: v1svc
+      labels:
+        #version: v1
+        app: prod
+
