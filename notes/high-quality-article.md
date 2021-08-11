@@ -1,0 +1,14 @@
+#### 文章推荐阅读 精选
+- dns原理: https://www.ruanyifeng.com/blog/2016/06/dns.html
+- k8s storage class: https://www.cnblogs.com/panwenbin-logs/p/12196286.html
+- pprof: https://lessisbetter.site/2019/05/18/go-goroutine-leak/
+- netpoller: https://mp.weixin.qq.com/s/3kqVry3uV6BeMei8WjGN4g
+- 横扫http知识点: https://www.cnblogs.com/xiaolincoding/p/12442435.html
+- syscall底层原理: https://www.cnblogs.com/zl1991/p/6543634.html
+- channel底层原理: https://blog.csdn.net/u010853261/article/details/85231944
+- select底层原理: https://www.jianshu.com/p/5923cde1b6a3
+- 内存管理: https://mp.weixin.qq.com/s/HJB_ATQFNqG82YBCRr97CA
+- channel、map释放问题: http://xiaorui.cc/archives/5450
+- 抓包mysql事务: http://xiaorui.cc/archives/5394
+- go信号式抢占调度: http://xiaorui.cc/archives/6535
+- fasthttp body错乱问题: https://cloud.tencent.com/developer/news/462918

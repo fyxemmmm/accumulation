@@ -1,0 +1,29 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: prodvs
+  namespace: myistio
+spec:
+  hosts:
+    - prodsvc
+  http:
+  - match:
+    - uri:
+       prefix: "/p"   # curl prodsvc/p/123
+    rewrite:
+       uri: "/prods"
+    route:
+     - destination:
+        host: prodsvc
+        port:
+          number: 80
+  - match:
+    - uri:             # 可以用来聚合api
+       prefix: "/r"    # curl prodsvc/r/123  -> 实际调用 reviewsvc/reviews/123
+    rewrite:
+       uri: "/reviews"
+    route:
+      - destination:
+          host: reviewsvc
+          port:
+            number: 80

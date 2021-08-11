@@ -1,0 +1,11 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: prod-rule
+  namespace: myistio
+spec:
+  host: prodsvc
+  subsets:
+    - name: v1svc  # 对应subset
+      labels:
+        version: v1   # 流量路由到有v1标签的

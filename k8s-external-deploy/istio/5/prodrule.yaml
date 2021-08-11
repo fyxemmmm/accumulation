@@ -1,0 +1,15 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: prod-rule
+  namespace: myistio
+spec:
+  host: prodsvc
+  trafficPolicy:
+    loadBalancer:
+      simple: RANDOM
+  subsets:
+    - name: v1svc
+      labels:
+        #version: v1
+        app: prod
