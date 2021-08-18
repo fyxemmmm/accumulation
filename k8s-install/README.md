@@ -67,7 +67,7 @@ kubeadm join 192.168.0.191:6443 --token zx5rj1.19yqkv7q2uehatit \
 ```shell
 #然后退出到普通用户, 用kubectl命令执行
 #去除主节点污点
-kubectl taint nodes --all node-role.kubernetes.io/master-   (后面一个 – 是需要的)
+kubectl taint nodes --all node-role.kubernetes.io/master-   # (后面一个 – 是需要的)
 
 给工作节点打标签
 kubectl label node huawei-worker  node-role.kubernetes.io/node=node
