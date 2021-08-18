@@ -9,7 +9,7 @@ spec:
       istio: ingressgateway
   jwtRules:
     # issuer  签发者
-    - issuer: "user@jtthink.com"
+    - issuer: "user@feixiang.com"
       jwks: |
         {
             "keys": [

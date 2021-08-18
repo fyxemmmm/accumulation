@@ -5,7 +5,7 @@ metadata:
   namespace: myistio
 spec:
   hosts:
-    - pp.jtthink.com
+    - pp.feixiang.com
     - prodsvc
   #  - reviewsvc
   gateways:
