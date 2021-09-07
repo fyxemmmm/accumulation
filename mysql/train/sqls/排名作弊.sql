@@ -1,1 +1,0 @@
-SELECT * FROM user_level  order by id in (4,5,6) desc, user_total desc
