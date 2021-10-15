@@ -1,0 +1,33 @@
+# tkn task start test --dry-run
+#? Enter a name for a pipeline resource : demo-git
+#? Enter a value for url :  https://github.com/yourusername/tekton-demo
+#? Enter a value for revision :  master
+# 可以 k get pipelineresource demo-git -o yaml 查看细节
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: test
+spec:
+  resources:
+    inputs:
+      - name: repo
+        type: git
+  steps:
+    - name: run-test
+      image: golang:1.14-alpine
+      workingDir: /workspace/repo
+      command: ["go"]
+      args: ["test"]
+---
+apiVersion: tekton.dev/v1beta1
+kind: TaskRun
+metadata:
+  name: testrun
+spec:
+  resources:
+    inputs: # 定义输入的资源
+      - name: repo # 定义了名字叫repo的demo-git的pipelineresource
+        resourceRef:
+          name: demo-git
+  taskRef:
+    name: test

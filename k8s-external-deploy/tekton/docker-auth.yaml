@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: docker-auth
+  annotations:
+    tekton.dev/docker-0: https://index.docker.io/v1/ # 推送到dockerhub上
+type: kubernetes.io/basic-auth
+stringData:
+  username: fyxemmmm
+  password: passwd
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: build-sa
+secrets:
+  - name: docker-auth
