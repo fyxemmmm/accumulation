@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis-cluster-1
+  namespace: redis-cluster
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis-1
+      appCluster: redis-cluster
+  template:
+    metadata:
+      labels:
+        app: redis-1
+        appCluster: redis-cluster
+    spec:
+      containers:
+        - name: redis
+          image: "redis:5.0.12-alpine"
+          command:
+            - "redis-server"
+          args:
+            - "/data/redis/rediscfg/redis.conf"
+            - "--protected-mode"
+            - "no"
+            - "--cluster-announce-ip"
+            - "121.36.226.197"
+            - "--cluster-announce-port"
+            - "30791"
+            - "--cluster-announce-bus-port"
+            - "32540"
+          ports:
+            - name: redis
+              containerPort: 6379
+              protocol: "TCP"
+            - name: cluster
+              containerPort: 16379
+              protocol: "TCP"
+          volumeMounts:
+            - name: "redis-conf"
+              mountPath: "/data/redis/rediscfg"
+            - name: "redis-1-storage"
+              mountPath: "/data/redis"
+          env:
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+      volumes:
+        - name: "redis-conf"
+          configMap:
+            name: "redis-cluster-conf"
+            items:
+              - key: "redis.conf"
+                path: "redis.conf"
+        - name: redis-1-storage
+          persistentVolumeClaim:
+            claimName: redis-pvc-1
