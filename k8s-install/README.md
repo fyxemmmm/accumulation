@@ -11,7 +11,7 @@ sudo cat <<EOF > /etc/yum.repos.d/kubernetes.repo
 name=Kubernetes
 baseurl=https://mirrors.aliyun.com/kubernetes/yum/repos/kubernetes-el7-x86_64/
 enabled=1
-gpgcheck=1
+gpgcheck=0
 repo_gpgcheck=1
 gpgkey=https://mirrors.aliyun.com/kubernetes/yum/doc/yum-key.gpg
 https://mirrors.aliyun.com/kubernetes/yum/doc/rpm-package-key.gpg
@@ -57,6 +57,7 @@ systemctl enable kubelet
 #### 主机执行
 ```shell
 #主机执行：
+swapoff -a
 kubeadm init --image-repository registry.cn-hangzhou.aliyuncs.com/google_containers  --kubernetes-version=1.20.2 --pod-network-cidr=10.244.0.0/16 --service-cidr=10.96.0.0/12  
 
 #得到这个结果，给另外worker去执行
